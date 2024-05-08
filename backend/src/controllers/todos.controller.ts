@@ -68,3 +68,63 @@ export const createTodo: RequestHandler = async (req, res) => {
     });
   }
 };
+
+// edit todo
+export const editTodo: RequestHandler = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+    const { title, description, deadline, done } = req.body;
+    const todo = await Todo.findById(id);
+    if (!todo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Todo not found" });
+    }
+
+    if (!todo.createdBy?.equals(user?.userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized to edit this todo" });
+    }
+    // Update the todo
+    todo.title = title || todo.title;
+    todo.description = description || todo.description;
+    todo.deadline = deadline || todo.deadline;
+    todo.done = done !== undefined ? done : todo.done;
+    const updatedTodo = await todo.save();
+    return res.status(200).json({
+      success: true,
+      message: "Todo updated successfully",
+      data: updatedTodo,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while updating todo",
+    });
+  }
+};
+
+// delete todo
+export const deleteTodo: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const todo = await Todo.findByIdAndDelete(id);
+    if (!todo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Todo not found" });
+    }
+    return res.status(200).json({
+      success: true,
+      todo,
+      message: "Todo deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while deleting todo",
+    });
+  }
+};
